@@ -34,9 +34,9 @@
             <th>Item Name</th>
             <th>Item Cost</th>
             <td class="spacer"></td>
-            <th contenteditable="true" onfocusout="updatePeople()">Editable input 1</th>
-            <th contenteditable="true" onfocusout="updatePeople()">Editable input 2</th>
-            <th contenteditable="true" onfocusout="updatePeople()">Editable input 3</th>
+            <th contenteditable="true" onfocusout="updatePeople()">✏️ Person 1</th>
+            <th contenteditable="true" onfocusout="updatePeople()">✏️ Person 2</th>
+            <th contenteditable="true" onfocusout="updatePeople()">✏️ Person 3</th>
         </tr>
         <tr id="row_1">
             <td><button onclick="deleteRow(1); updateCost()">❌</button></td>
@@ -60,7 +60,7 @@
 
     <h2>Global Inputs (tax, tip)</h2>
 
-    <input type="checkbox" id="add_before_mul"> Add to subtotal before multiplying? 
+    <input type="checkbox" id="add_before_mul"> Add to subtotal before multiplying (uncommon)? 
 
     <table id='globalTable'>
         <tr>
@@ -68,11 +68,11 @@
             <th>Value</th>
         </tr>
         <tr>
-            <td>Adder (tax)</td>
+            <td>Adder, e.g., tax</td>
             <td contenteditable="true" onfocusout="updateCost()" id="globalAdder">0</td>
         </tr>
         <tr>
-            <td>Multiplier (tip)</td>
+            <td>Multiplier, e.g., tip</td>
             <td contenteditable="true" onfocusout="updateCost()" id="globalMultiplier">1.00</td>
         </tr>
     </table>
@@ -81,7 +81,7 @@
     <a>Subtotal: </a><a id="subtotalDisplay">30.00</a><br>
     <a>Total: </a><a id="totalDisplay">30.00</a>
 
-    <h1>Payment Output</h1>
+    <h1>Payment Output (readonly)</h1>
     <table id='paymentTable'>
         <tr>
             <th></th>

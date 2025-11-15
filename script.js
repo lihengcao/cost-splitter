@@ -28,7 +28,7 @@ function addItem(){ // button function
     
     // Second column is Item Name
     let newItem = new_row.insertCell(-1); // append cell
-    newItem.innerText = Math.floor(Math.random() * 10); // give random data
+    newItem.innerText = '.'; // give random data
     newItem.contentEditable = "true"; // make this editable
 
     // Third Column is Item Cost
@@ -57,7 +57,7 @@ function addPerson(){
     let paymentTable = document.getElementById("paymentTable");
 
     let costPerson = document.createElement("th"); // create header
-    costPerson.innerText = "New Person"; // give name of "New"
+    costPerson.innerText = "✏️ New Person"; // give name of "New"
     costPerson.contentEditable = "true"; // editable 
     costPerson.addEventListener("focusout", updatePeople);
     costTable.rows[0].appendChild(costPerson);
