@@ -30,6 +30,7 @@
     
     <table id='costTable'>
         <tr>
+            <th>Delete Item</th>
             <th>Item Name</th>
             <th>Item Cost</th>
             <td class="spacer"></td>
@@ -37,7 +38,8 @@
             <th contenteditable="true" onfocusout="updatePeople()">Editable input 2</th>
             <th contenteditable="true" onfocusout="updatePeople()">Editable input 3</th>
         </tr>
-        <tr>
+        <tr id="row_1">
+            <td><button onclick="deleteRow(1); updateCost()">❌</button></td>
             <td contenteditable="true">Name</td>
             <td contenteditable="true" onfocusout="updateCost()" class="cost">10</td>
             <td class="spacer"></td>
@@ -45,7 +47,8 @@
             <td><input type="checkbox"></th>
             <td><input type="checkbox"></th>
         </tr>
-        <tr>
+        <tr id="row_2">
+            <td><button onclick="deleteRow(2); updateCost()">❌</button></td>
             <td contenteditable="true">Name</td>
             <td contenteditable="true" onfocusout="updateCost()" class="cost">20</td>
             <td class="spacer"></td>

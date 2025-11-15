@@ -7,24 +7,38 @@ let refreshIntervalID = setInterval(updateAll, 500);
 // gives warning before reloading or leaving site
 window.onbeforeunload = function() { return "Data will be lost if you leave the page, are you sure?"; }; 
 
+let new_row_number = 3;
+
+function rowID(row_number){
+    return "row_" + row_number;
+}
+
 function addItem(){ // button function
     let table = document.getElementById("costTable"); // get the table
 
     let new_row = table.insertRow(-1); // append row
+    new_row.id = rowID(new_row_number); // give id
+
+    // First column is Delete Item button
+    let newButtonCell = new_row.insertCell(-1); // append cell
+    let newButton = document.createElement("button");
+    newButton.setAttribute('onclick', `deleteRow(${new_row_number++}); updateCost()`);
+    newButtonCell.appendChild(newButton);
+    newButton.innerText = "❌";
     
-    // First column is Item Name
+    // Second column is Item Name
     let newItem = new_row.insertCell(-1); // append cell
     newItem.innerText = Math.floor(Math.random() * 10); // give random data
     newItem.contentEditable = "true"; // make this editable
 
-    // Second Column is Item Cost
+    // Third Column is Item Cost
     let newCost = new_row.insertCell(-1); // append cell
     newCost.innerText = Math.floor(Math.random() * 10); // give random data
     newCost.contentEditable = "true"; // make this editable
     newCost.className = "cost"; // give class name of cost
     newCost.addEventListener("focusout", updateCost); // give function to update total price
 
-    // Third column is the spacer for split
+    // Fourt column is the spacer for split
     let newSpacer = new_row.insertCell(-1); // append cell
     newSpacer.className = "spacer";
 
@@ -101,14 +115,16 @@ function updateTotalCost(){
     // console.log(document.getElementById("0,0").checked);
 }
 
+const NONPEOPLE_COLUMNS = 4;
+
 function updatePeople(){
     let costHeader = document.getElementById("costTable").rows[0]; // get input header
     let paymentHeader = document.getElementById("paymentTable").rows[0]; // get output header
 
-    for (let i = 3; i < costHeader.cells.length; ++i){ // first three items are not people
+    for (let i = NONPEOPLE_COLUMNS; i < costHeader.cells.length; ++i){ // first four items are not people
         let text = costHeader.cells[i].innerText; // get the text
-        people[i-3] = text; // update people array
-        paymentHeader.cells[i-3].innerText = text; // update output header
+        people[i-NONPEOPLE_COLUMNS] = text; // update people array
+        paymentHeader.cells[i-NONPEOPLE_COLUMNS].innerText = text; // update output header
     }
 }
 
@@ -120,7 +136,7 @@ function updatePayment(){
     for (let row = 1; row < costTable.rows.length; ++row){
         let checks = [];
         for (let col = 0; col < people.length; ++col){
-            if (costTable.rows[row].cells[col + 3].children[0].checked){
+            if (costTable.rows[row].cells[col + NONPEOPLE_COLUMNS].children[0].checked){
                 checks.push(col);
             }
         }
@@ -182,4 +198,9 @@ function updateCost(){
 function updateAll(){
     updateCost();
     updatePeople();
+}
+
+function deleteRow(row_number) {
+    const row = document.getElementById(rowID(row_number));
+    row.parentNode.removeChild(row);
 }
