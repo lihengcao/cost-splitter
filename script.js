@@ -1,11 +1,12 @@
-// keeps track of the names and number of people
-let people = ["Person A", "Person B", "Person C"];
+// TODO put checkboxes in the state/url params
 
-// updates information on a time interval
+// refreshes everything on a timer
 let refreshIntervalID = setInterval(updateAll, 500);
 
-// gives warning before reloading or leaving site
-window.onbeforeunload = function() { return "Data will be lost if you leave the page, are you sure?"; }; 
+let global_state = {
+    // keeps track of the names and number of people
+    "people": ["Person A", "Person B", "Person C"],
+}
 
 let new_row_number = 3;
 
@@ -42,7 +43,7 @@ function addItem(){ // button function
     let newSpacer = new_row.insertCell(-1); // append cell
     newSpacer.className = "spacer";
 
-    for (let i = 0; i < people.length; ++i){
+    for (let i = 0; i < global_state["people"].length; ++i){
         let newPerson = new_row.insertCell(-1); // create <td/>
         let input = document.createElement("input");// create <input/> 
         input.setAttribute('type', 'checkbox');// make checkbox
@@ -51,7 +52,7 @@ function addItem(){ // button function
 }
 
 function addPerson(){
-    people.push("New"); // keep track of new person
+    global_state["people"].push("New"); // keep track of new person
 
     let costTable = document.getElementById("costTable");
     let paymentTable = document.getElementById("paymentTable");
@@ -59,7 +60,7 @@ function addPerson(){
     let costPerson = document.createElement("th"); // create header
     costPerson.innerText = "✏️ New Person"; // give name of "New"
     costPerson.contentEditable = "true"; // editable 
-    costPerson.addEventListener("focusout", updatePeople);
+    costPerson.addEventListener("focusout", updatePeopleFromUI);
     costTable.rows[0].appendChild(costPerson);
 
     for (let i = 1; i < costTable.rows.length; ++i){ // go through the non header rows
@@ -81,7 +82,7 @@ function getSubtotal() {
 
 // this function sums up all of the item costs
 // this can be used as a way to check if every item/price has been entered
-function updateTotalCost(){
+function updateTotalSection(){
     let sum = 0; // sum of 
     let numbers = document.getElementsByClassName("cost");
 
@@ -111,24 +112,37 @@ function updateTotalCost(){
     }
 
     document.getElementById("totalDisplay").innerText = sum.toFixed(2); // display with precision 2
-
-    // console.log(document.getElementById("0,0").checked);
 }
 
 const NONPEOPLE_COLUMNS = 4;
 
-function updatePeople(){
+function updatePeopleFromUI(){
     let costHeader = document.getElementById("costTable").rows[0]; // get input header
     let paymentHeader = document.getElementById("paymentTable").rows[0]; // get output header
 
-    for (let i = NONPEOPLE_COLUMNS; i < costHeader.cells.length; ++i){ // first four items are not people
+    for (let i = NONPEOPLE_COLUMNS; i < costHeader.cells.length; ++i){ // first items are not people
         let text = costHeader.cells[i].innerText; // get the text
-        people[i-NONPEOPLE_COLUMNS] = text; // update people array
+        global_state.people[i-NONPEOPLE_COLUMNS] = text; // update people array
         paymentHeader.cells[i-NONPEOPLE_COLUMNS].innerText = text; // update output header
     }
 }
 
+function updatePeopleFromState(state){
+    console.log(state);
+    let costHeader = document.getElementById("costTable").rows[0]; // get input header
+    let paymentHeader = document.getElementById("paymentTable").rows[0]; // get output header
+
+    for (let i = NONPEOPLE_COLUMNS; i < costHeader.cells.length; ++i){ // first items are not people
+        let text = state.people[i-NONPEOPLE_COLUMNS]; // get the text
+        costHeader.cells[i].innerText = text; // update UI input header
+        paymentHeader.cells[i-NONPEOPLE_COLUMNS].innerText = text; // update output header
+    }
+}
+
+const costColumn = 2;
+
 function updatePayment(){
+    people = global_state["people"];
     let costs = Array(people.length).fill(0);
 
     let costTable = document.getElementById("costTable");
@@ -140,7 +154,9 @@ function updatePayment(){
                 checks.push(col);
             }
         }
-        let cost = parseFloat(costTable.rows[row].cells[1].innerText);
+
+        
+        let cost = parseFloat(costTable.rows[row].cells[costColumn].innerText);
         if (!isNaN(cost)){
             if (checks.length == 0){ // no checks means even split
                 cost /= people.length;
@@ -191,16 +207,41 @@ function updatePayment(){
 
 // this function updates all of them costs by updating the total cost and each person's payment
 function updateCost(){
-    updateTotalCost();
+    updateTotalSection();
     updatePayment();
 }
 
 function updateAll(){
     updateCost();
-    updatePeople();
+    updatePeopleFromUI();
+    saveToUrlParams();
+}
+
+function loadFromURLParams() {
+    const params = new URLSearchParams(window.location.search);
+    const state = params.get('state');
+
+    if (state == null) {
+        return;
+    }
+
+    global_state = JSON.parse(decodeURIComponent(state));
+    console.log('Loaded: ' + decodeURIComponent(state));
+
+    updatePeopleFromState(global_state);
+}
+
+function saveToUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+  params.set('state', encodeURIComponent(JSON.stringify(global_state)));
+  history.replaceState({}, '', '?' + params.toString());
 }
 
 function deleteRow(row_number) {
     const row = document.getElementById(rowID(row_number));
     row.parentNode.removeChild(row);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadFromURLParams();
+});
