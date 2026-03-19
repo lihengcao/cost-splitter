@@ -1,13 +1,15 @@
-table, th, td {
-    border: 1px solid black;
-    margin: 1px;
+table,
+th,
+td {
+  border: 1px solid black;
+  margin: 1px;
 }
 
 td {
-    text-align: center;
+  text-align: center;
 }
 
 .spacer {
-    border: 2px solid white;
-    margin: unset;
+  border: 2px solid white;
+  margin: unset;
 }
