@@ -1,9 +1,82 @@
-<nav>
-    <a href="">App Home</a>
-    <a href="about.html">Info (Implementation Details)</a>
-    <a href="https://github.com/lihengcao/">Github</a>
-    <a href="https://www.linkedin.com/in/lihengcao/">Contact/Linkedin</a>
-</nav><br>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Implementation Details - Cost Splitter</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        code { background: #f4f4f4; padding: 2px 5px; border-radius: 3px; font-family: monospace; font-size: 0.9em; }
+        section { margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+        h2 { color: #2c3e50; border-left: 5px solid #007bff; padding-left: 15px; }
+        .tech-tag { display: inline-block; background: #007bff; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
+        .credit-note { background: #e9ecef; padding: 15px; border-radius: 8px; font-style: italic; color: #495057; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html">App Home</a>
+        <a href="about.html">Info (Implementation Details)</a>
+        <a href="https://github.com/lihengcao/">Github</a>
+        <a href="https://www.linkedin.com/in/lihengcao/">Contact/Linkedin</a>
+    </nav>
 
-<p1>There are two ways elements are updated. The first is on a timer of 0.5 seconds. The second is when an element loses focus.</p1><br>
-<p1>The global inputs are meant for things like tax and tip. This should make the cost splitter's numbers match the receipt better. The adder value is added to the subtotal and then multplied to get the total. For payment, all costs gets multiplier, and the adder is split proportionally. Try it out!</p1>
+    <h1>Technical Implementation</h1>
+
+    <section>
+        <h2>1. Event-Driven Architecture</h2>
+        <span class="tech-tag">Reactive UI</span>
+        <p>
+            The application uses a strictly event-driven model to minimize CPU usage. Updates are triggered only when the user interacts with the application.
+        </p>
+        <ul>
+            <li><strong>Text Inputs:</strong> Uses <code>oninput</code> for real-time math recalculation as you type.</li>
+            <li><strong>Checkboxes:</strong> Uses <code>onchange</code> to trigger immediate proportional splits.</li>
+            <li><strong>Dynamic Elements:</strong> When new rows or columns are added, event listeners are attached programmatically to the fresh DOM elements.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>2. Manual URL Optimization</h2>
+        <span class="tech-tag">Custom Compression</span>
+        <p>
+            To keep URLs short enough for messaging apps (which often have a 2,000-character limit), we use a multi-step optimization process:
+        </p>
+        <ul>
+            <li><strong>Bitmasking:</strong> Instead of storing checkbox states as a long list of <code>true/false</code> values, we convert them into a single integer. For example, <code>[true, false, true]</code> becomes binary <code>101</code>, which is stored simply as <code>5</code>.</li>
+            <li><strong>Structural Flattening:</strong> Redundant JSON keys (like <code>"name":</code> and <code>"cost":</code>) are removed. Items are stored as flat arrays: <code>["Pizza", 12.50, 7]</code>.</li>
+            <li><strong>Base64 Encoding:</strong> The resulting minified JSON is encoded into a URL-safe Base64 string. This bypasses the need for percent-encoding special characters, further reducing the string length.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>3. Proportional Cost Logic</h2>
+        <span class="tech-tag">Mathematics</span>
+        <p>
+            The splitting algorithm ensures that taxes and tips are shared fairly:
+        </p>
+        <ol>
+            <li><strong>Subtotal:</strong> Sums all base item costs.</li>
+            <li><strong>Global Modifiers:</strong> Applies the "Adder" (tax) and "Multiplier" (tip).</li>
+            <li><strong>Proportional Split:</strong> Each person's share of the tax and tip is calculated based on the <strong>ratio</strong> of their individual subtotal to the grand subtotal. This ensures that someone who ordered a $5 salad doesn't pay as much tax as someone who ordered a $50 steak.</li>
+        </ol>
+    </section>
+
+    <section>
+        <h2>4. Cache Management</h2>
+        <span class="tech-tag">Deployment</span>
+        <p>
+            To ensure users always receive the latest feature updates and bug fixes, the application uses a versioned query string for its JavaScript inclusion (e.g., <code>script.js?v=7</code>). This forces the browser to bypass its local cache and fetch the newest logic.
+        </p>
+    </section>
+
+    <section>
+        <h2>Project Credits</h2>
+        <div class="credit-note">
+            This tool was modernized and optimized with the assistance of <strong>Gemini CLI</strong> ✨.
+        </div>
+    </section>
+
+</body>
+</html>

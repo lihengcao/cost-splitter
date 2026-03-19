@@ -8,11 +8,9 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
-<script src="script.js"></script>
-
 <body>
     <nav>
-		<a href="">App Home</a>
+		<a href="index.html">App Home</a>
 		<a href="about.html">Info (Implementation Details)</a>
 		<a href="https://github.com/lihengcao/">Github</a>
         <a href="https://www.linkedin.com/in/lihengcao/">Contact/Linkedin</a>
@@ -20,78 +18,102 @@
 
     <h1>Cost Splitter</h1>
 
-    Self Link: <a href="https://lihengcao.github.io/cost-splitter/">lihengcao.github.io/cost-splitter/</a><br>
+    <!-- 1. Share Section -->
+    <div style="background: #f8f9fa; padding: 15px; margin: 10px 0; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong style="color: #495057;">Share with the Group</strong>
+            <span id="sync-status" style="font-size: 12px; font-weight: bold; color: #28a745;">&#10003; Synced to URL</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="shareUrlInput" readonly style="flex-grow: 1; padding: 8px; font-size: 13px; border: 1px solid #ced4da; border-radius: 4px; background: #fff; color: #495057;">
+            <button onclick="copyLink()" id="copyBtn" style="padding: 8px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; transition: background 0.2s;">Copy Link</button>
+        </div>
+    </div>
 
+    <button onclick="resetState()" style="background: #fff; color: #dc3545; border: 1px solid #dc3545; padding: 5px 15px; cursor: pointer; border-radius: 4px; margin: 10px 0;">Clear All & Start Over</button>
 
-    <h2>Individual Inputs</h2>
+    <!-- 2. Items Section -->
+    <h2>1. List Items & Who Shared Them</h2>
+    <p style="color: #666; font-size: 14px; margin-top: -10px;">Leave all boxes unchecked to split an item evenly among everyone.</p>
 
-    <button onclick="addItem(); updateCost()">Add item/row!</button>
-    <button onclick="addPerson(); updateCost()">Add person/column!</button>
+    <div style="margin-bottom: 10px;">
+        <button onclick="addItem()" style="padding: 8px 15px; font-weight: bold;">+ Add Item</button>
+        <button onclick="addPerson()" style="padding: 8px 15px; font-weight: bold;">+ Add Person</button>
+    </div>
     
     <table id='costTable'>
         <tr>
-            <th>Delete Item</th>
-            <th>Item Name</th>
-            <th>Item Cost</th>
+            <th></th>
+            <th>Item Description</th>
+            <th>Cost ($)</th>
             <td class="spacer"></td>
-            <th contenteditable="true" onfocusout="updatePeopleFromUI()">✏️ Person 1</th>
-            <th contenteditable="true" onfocusout="updatePeopleFromUI()">✏️ Person 2</th>
-            <th contenteditable="true" onfocusout="updatePeopleFromUI()">✏️ Person 3</th>
+            <th contenteditable="true" class="person-header">✏️ Person 1</th>
+            <th contenteditable="true" class="person-header">✏️ Person 2</th>
+            <th contenteditable="true" class="person-header">✏️ Person 3</th>
         </tr>
         <tr id="row_1">
-            <td><button onclick="deleteRow(1); updateCost()">❌</button></td>
-            <td contenteditable="true">Name</td>
-            <td contenteditable="true" onfocusout="updateCost()" class="cost">10</td>
+            <td><button onclick="deleteRow(1)">❌</button></td>
+            <td contenteditable="true" class="itemName">Pizza</td>
+            <td contenteditable="true" class="cost">10</td>
             <td class="spacer"></td>
-            <td><input type="checkbox"></th>
-            <td><input type="checkbox"></th>
-            <td><input type="checkbox"></th>
+            <td><input type="checkbox"></td>
+            <td><input type="checkbox"></td>
+            <td><input type="checkbox"></td>
         </tr>
         <tr id="row_2">
-            <td><button onclick="deleteRow(2); updateCost()">❌</button></td>
-            <td contenteditable="true">Name</td>
-            <td contenteditable="true" onfocusout="updateCost()" class="cost">20</td>
+            <td><button onclick="deleteRow(2)">❌</button></td>
+            <td contenteditable="true" class="itemName">Drinks</td>
+            <td contenteditable="true" class="cost">20</td>
             <td class="spacer"></td>
-            <td><input type="checkbox"></th>
-            <td><input type="checkbox"></th>
-            <td><input type="checkbox"></th>
+            <td><input type="checkbox"></td>
+            <td><input type="checkbox"></td>
+            <td><input type="checkbox"></td>
         </tr>
     </table>
 
-    <h2>Global Inputs (tax, tip)</h2>
+    <!-- 3. Globals Section -->
+    <h2>2. Add Taxes, Fees, or Tip</h2>
 
     <table id='globalTable'>
         <tr>
-            <th>Global</th>
+            <th>Extra Charges</th>
             <th>Value</th>
         </tr>
         <tr>
-            <td>Adder, e.g., tax</td>
-            <td contenteditable="true" onfocusout="updateCost()" id="globalAdder">0</td>
+            <td>Fixed Fees (Tax, Delivery, etc.)</td>
+            <td contenteditable="true" id="globalAdder">0</td>
         </tr>
         <tr>
-            <td>Multiplier, e.g., tip</td>
-            <td contenteditable="true" onfocusout="updateCost()" id="globalMultiplier">1.00</td>
+            <td>Multiplier (Tip, Service Charge)</td>
+            <td contenteditable="true" id="globalMultiplier">1.0</td>
         </tr>
     </table>
+    <div style="margin-top: 10px;">
         <input type="checkbox" id="add_before_mul">
-        Add to subtotal before multiplying? (Uncommon)
-    <h2>Total</h2>
-    <a>Subtotal: </a><a id="subtotalDisplay">30.00</a><br>
-    <a>Total: </a><a id="totalDisplay">30.00</a>
+        <label for="add_before_mul" style="font-size: 14px;">Apply tip to the tax/fees too? (Add to subtotal before multiplying)</label>
+    </div>
 
-    <h1>Payment Output (readonly)</h1>
-    <table id='paymentTable'>
-        <tr>
-            <th></th>
-            <th></th>
-            <th></th>
+    <!-- 4. Summary Section -->
+    <div style="margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px;">
+        <div style="font-size: 18px;"><strong>Subtotal:</strong> $<span id="subtotalDisplay">0.00</span></div>
+        <div style="font-size: 24px; color: #28a745;"><strong>Grand Total:</strong> $<span id="totalDisplay">0.00</span></div>
+    </div>
+
+    <!-- 5. Output Section -->
+    <h2>3. Final Totals Per Person</h2>
+    <table id='paymentTable' style="width: 100%; border-collapse: collapse;">
+        <tr style="background: #f1f3f5;">
+            <!-- Headers populated by script -->
         </tr>
         <tr>
-            <td></td>
-            <td></td>
-            <td></td>
+            <!-- Amounts populated by script -->
         </tr>
     </table>
+
+    <footer style="margin-top: 50px; padding: 20px; border-top: 1px solid #eee; text-align: center; color: #888; font-size: 13px;">
+        Made with help from <strong>Gemini CLI</strong> ✨
+    </footer>
+
+    <script src="script.js?v=7"></script>
 </body>
 </html>
