@@ -212,11 +212,11 @@ function addNewRow() {
   const n = row.insertCell(1);
   n.className = "itemName";
   n.contentEditable = true;
-  n.innerText = "Item " + id;
+  n.innerText = "";
   const c = row.insertCell(2);
   c.className = "cost";
   c.contentEditable = true;
-  c.innerText = "0";
+  c.innerText = "";
   row.insertCell(3).className = "spacer";
 
   // Add person checkboxes
@@ -242,7 +242,7 @@ function addNewPerson() {
   const th = document.createElement("th");
   th.contentEditable = true;
   th.className = "person-header";
-  th.innerText = "✏️ New";
+  th.innerText = "";
   costTable.rows[0].appendChild(th);
 
   // Add body checkboxes
@@ -254,7 +254,7 @@ function addNewPerson() {
   }
 
   // Update payment table
-  payTable.rows[0].insertCell(-1).innerText = "New";
+  payTable.rows[0].insertCell(-1).innerText = "";
   payTable.rows[1].insertCell(-1).innerText = "0.00";
 
   bindInputEvents(th);
@@ -368,8 +368,7 @@ function reconstructUIFromState(state) {
     const row = costTable.insertRow(-1);
     const id = nextRowId++;
     row.id = "row_" + id;
-    row.insertCell(0).innerHTML =
-      `<button onclick="deleteRow(${id})">❌</button>`;
+    row.insertCell(0).innerHTML = `<button onclick="deleteRow(${id})">❌</button>`;
 
     let name, cost, bitmask;
     if (Array.isArray(item)) {
@@ -424,11 +423,22 @@ function bindInputEvents(root = document) {
       ? document.querySelectorAll(
           ".itemName, .cost, .person-header, #globalAdder, #globalMultiplier",
         )
-      : [root, ...root.querySelectorAll(".itemName, .cost, .person-header")];
+      : root.classList &&
+          (root.classList.contains("itemName") ||
+            root.classList.contains("cost") ||
+            root.classList.contains("person-header"))
+        ? [root]
+        : [root, ...root.querySelectorAll(".itemName, .cost, .person-header")];
 
   targets.forEach((el) => {
     el.oninput = triggerFullRefresh;
-    el.onblur = triggerFullRefresh;
+    el.onblur = (e) => {
+      // Cleanup: if the cell only contains whitespace or a browser <br>, make it truly empty
+      if (e.target.innerText.trim() === "") {
+        e.target.innerHTML = "";
+      }
+      triggerFullRefresh();
+    };
   });
 
   const inputs =
