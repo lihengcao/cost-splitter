@@ -23,6 +23,7 @@ The core logic resides in `script.js` and follows this flow:
 3. **Proportional Split:** 
    - Calculates the ratio of each person's spending vs. the subtotal.
    - Applies global fees (tax) and multipliers (tip) to each individual total based on that ratio.
+   - **Multiplier Fallback:** If the multiplier field is empty, the engine defaults to `1.0` to prevent grand totals from being zeroed out.
    - Result: Someone buying a $5 appetizer pays proportionally less tax/tip than someone buying a $50 steak.
 
 ## 🛠 Key Files

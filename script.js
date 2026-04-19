@@ -128,7 +128,16 @@ function calculateSubtotal() {
 
 function calculateGrandTotals(subtotal) {
   const adder = getNumericValue("globalAdder");
-  const multiplier = getNumericValue("globalMultiplier");
+  let multiplier = getNumericValue("globalMultiplier");
+
+  // Fix: multiplier should default to 1.0 if not set or 0
+  if (multiplier === 0) {
+    const rawMultiplier = document.getElementById("globalMultiplier").innerText.trim();
+    if (rawMultiplier === "") {
+      multiplier = 1.0;
+    }
+  }
+
   const addBefore = document.getElementById("add_before_mul").checked;
 
   const total = addBefore
@@ -342,7 +351,7 @@ function reconstructUIFromState(state) {
   const costHead = costTable.rows[0];
   const payHead = payTable.rows[0];
   // Remove old people columns
-  while (costHead.lastElementChild.classList.contains("person-header")) {
+  while (costHead.lastElementChild && costHead.lastElementChild.classList.contains("person-header")) {
     costHead.deleteCell(-1);
   }
   while (payHead.cells.length > 0) {
