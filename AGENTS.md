@@ -1,11 +1,14 @@
 # Agent Context: Cost Splitter
 
+> [!IMPORTANT]
+> **Agent Directive:** This file (`AGENTS.md`) serves as the core context for AI agents working on this codebase. Whenever any architectural changes, new features, or modifications are implemented, this file **MUST** be updated immediately to keep the technical specifications fully accurate.
+
 This is a single-page, **no-backend** web application used to split costs proportionally among groups. It is designed to be entirely stateless, relying on the URL for data persistence.
 
 ## 🏗 Architecture & Design
 - **Frontend only:** No database, no accounts, no API calls.
 - **URL-based Persistence:** All state is stored in the URL using a Base64-encoded JSON string (`?s=...`).
-- **Event-Driven:** The app abandoned a timer-based update model in favor of a reactive approach using `oninput`, `onblur`, and `onchange` listeners.
+- **Event-Driven:** The app abandoned a timer-based update model in favor of a reactive approach using `oninput`, `onblur`, `onchange`, and `onkeydown` listeners (for spreadsheet-style navigation).
 - **DOM as Source of Truth:** During active usage, the DOM elements (table cells and checkboxes) hold the primary state. This is serialized into the URL on every change.
 
 ## 💾 State Management (The `s` Parameter)
@@ -28,10 +31,11 @@ The core logic resides in `script.js` and follows this flow:
 
 ## 🛠 Key Files
 - `index.html`: Contains the table structure and the "Shareable Link" UI.
-- `script.js`: The "Brain." Contains math logic, DOM manipulation, and Base64 sync logic.
+- `script.js`: The "Brain." Contains math logic, DOM manipulation, Base64 sync logic, and spreadsheet-style key events.
 - `style.css`: Handles UI polish and the `:empty` placeholder logic for `contenteditable` cells.
 
 ## ⚠️ Implementation Caveats
 - **ContentEditable:** Browsers often insert `<br>` or `&nbsp;` when deleting text. `script.js` includes a `blur` cleanup utility to force these cells to be truly empty so CSS placeholders return.
+- **Spreadsheet Navigation:** The app overrides the default behavior of the `Enter` key on `contenteditable` cells via `onkeydown`. Pressing `Enter` focuses the corresponding cell in the next row (or next header cell) and auto-creates a new row/person if at the boundary, selecting all text inside the focused cell for a premium editing flow.
 - **Cache Busting:** The app uses manual versioning in the script tag (`script.js?v=X`) to ensure users receive logic updates immediately.
 - **Legacy Support:** The loader in `script.js` still supports the old `?state={...}` JSON format for backward compatibility with older shared links.

@@ -448,6 +448,67 @@ function bindInputEvents(root = document) {
       }
       triggerFullRefresh();
     };
+    el.onkeydown = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault(); // Prevent default inserting of <br>
+
+        if (el.classList.contains("itemName") || el.classList.contains("cost")) {
+          const currentRow = el.closest("tr");
+          if (currentRow) {
+            let nextRow = currentRow.nextElementSibling;
+            if (!nextRow) {
+              addNewRow();
+              nextRow = currentRow.nextElementSibling;
+            }
+            if (nextRow) {
+              const targetClass = el.classList.contains("itemName") ? ".itemName" : ".cost";
+              const nextCell = nextRow.querySelector(targetClass);
+              if (nextCell) {
+                nextCell.focus();
+                try {
+                  const range = document.createRange();
+                  range.selectNodeContents(nextCell);
+                  const selection = window.getSelection();
+                  selection.removeAllRanges();
+                  selection.addRange(range);
+                } catch (err) {}
+              }
+            }
+          }
+        } else if (el.classList.contains("person-header")) {
+          let nextHeader = el.nextElementSibling;
+          if (!nextHeader || !nextHeader.classList.contains("person-header")) {
+            addNewPerson();
+            const headers = document.querySelectorAll("#costTable .person-header");
+            nextHeader = headers[headers.length - 1];
+          }
+          if (nextHeader) {
+            nextHeader.focus();
+            try {
+              const range = document.createRange();
+              range.selectNodeContents(nextHeader);
+              const selection = window.getSelection();
+              selection.removeAllRanges();
+              selection.addRange(range);
+            } catch (err) {}
+          }
+        } else if (el.id === "globalAdder") {
+          const multiplierEl = document.getElementById("globalMultiplier");
+          if (multiplierEl) {
+            multiplierEl.focus();
+            try {
+              const range = document.createRange();
+              range.selectNodeContents(multiplierEl);
+              const selection = window.getSelection();
+              selection.removeAllRanges();
+              selection.addRange(range);
+            } catch (err) {}
+          }
+        } else if (el.id === "globalMultiplier") {
+          el.blur();
+        }
+      }
+    };
   });
 
   const inputs =
