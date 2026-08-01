@@ -26,7 +26,7 @@ The core logic resides in `script.js` and follows this flow:
 3. **Proportional Split:** 
    - Calculates the ratio of each person's spending vs. the subtotal.
    - Applies global fees (tax) and multipliers (tip) to each individual total based on that ratio.
-   - **Multiplier Fallback:** If the multiplier field is empty, the engine defaults to `1.0` to prevent grand totals from being zeroed out.
+   - **Multiplier Fallback & Placeholder Handling:** If the multiplier field is empty (or 0), `getMultiplierValue` defaults to `1.0` to prevent grand totals from being zeroed out. During URL serialization and DOM reconstruction, empty/default values (for multiplier, fixed fees, and item costs) are restored as empty strings (`""`) so CSS `:empty` placeholders (e.g. `1.0`, `0`, `0.00`) render correctly rather than displaying literal zeros.
    - Result: Someone buying a $5 appetizer pays proportionally less tax/tip than someone buying a $50 steak.
 
 ## 🛠 Key Files

@@ -37,6 +37,16 @@ function getNumericValue(idOrEl) {
   return el ? parseFloat(el.innerText) || 0 : 0;
 }
 
+function getMultiplierValue(idOrEl = "globalMultiplier") {
+  const el =
+    typeof idOrEl === "string" ? document.getElementById(idOrEl) : idOrEl;
+  if (!el) return 1.0;
+  const raw = el.innerText.trim();
+  if (raw === "") return 1.0;
+  const val = parseFloat(raw);
+  return isNaN(val) || val === 0 ? 1.0 : val;
+}
+
 function booleansToBitmask(boolArray) {
   return boolArray.reduce((acc, val, i) => acc + (val ? Math.pow(2, i) : 0), 0);
 }
@@ -128,16 +138,7 @@ function calculateSubtotal() {
 
 function calculateGrandTotals(subtotal) {
   const adder = getNumericValue("globalAdder");
-  let multiplier = getNumericValue("globalMultiplier");
-
-  // Fix: multiplier should default to 1.0 if not set or 0
-  if (multiplier === 0) {
-    const rawMultiplier = document.getElementById("globalMultiplier").innerText.trim();
-    if (rawMultiplier === "") {
-      multiplier = 1.0;
-    }
-  }
-
+  const multiplier = getMultiplierValue("globalMultiplier");
   const addBefore = document.getElementById("add_before_mul").checked;
 
   const total = addBefore
@@ -318,7 +319,7 @@ function persistStateToUrl() {
     p: Array.from(peopleHeaders).map((th) => th.innerText),
     g: [
       getNumericValue("globalAdder"),
-      getNumericValue("globalMultiplier"),
+      getMultiplierValue("globalMultiplier"),
       document.getElementById("add_before_mul").checked ? 1 : 0,
     ],
     i: [],
@@ -395,7 +396,7 @@ function reconstructUIFromState(state) {
     const c = row.insertCell(2);
     c.className = "cost";
     c.contentEditable = true;
-    c.innerText = cost;
+    c.innerText = cost || "";
     row.insertCell(3).className = "spacer";
 
     const checks = bitmaskToBooleans(bitmask, peopleNames.length);
@@ -411,8 +412,10 @@ function reconstructUIFromState(state) {
   // 3. Globals
   const g = state.g || state.globals || [0, 1, 0];
   if (Array.isArray(g)) {
-    document.getElementById("globalAdder").innerText = g[0];
-    document.getElementById("globalMultiplier").innerText = g[1];
+    document.getElementById("globalAdder").innerText = g[0] || "";
+    const multVal = parseFloat(g[1]);
+    document.getElementById("globalMultiplier").innerText =
+      isNaN(multVal) || multVal === 1 || multVal === 0 ? "" : g[1];
     document.getElementById("add_before_mul").checked = g[2] === 1;
   }
 
