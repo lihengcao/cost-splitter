@@ -5,6 +5,7 @@
  */
 
 let saveTimeout = null;
+let copyResetTimeout = null;
 let isBuildingDOM = false;
 let nextRowId = 3;
 
@@ -24,17 +25,27 @@ function triggerFullRefresh() {
   // Execute logic
   refreshCalculations();
 
-  // Debounce URL persistence
+  // Debounce URL persistence (status flips to "Synced" once this actually runs)
   clearTimeout(saveTimeout);
   saveTimeout = setTimeout(persistStateToUrl, 300);
 }
 
 // --- 2. Data Helpers ---
 
+// Lenient number parsing: tolerates "$12.50", " 12 ", and "1,200.50".
+// Commas are only stripped when they look like thousands separators,
+// so "12,50" still parses the same way it did before (as 12).
+function parseAmount(text) {
+  const cleaned = String(text || "")
+    .replace(/[$\s]/g, "")
+    .replace(/,(?=\d{3}(\D|$))/g, "");
+  return parseFloat(cleaned);
+}
+
 function getNumericValue(idOrEl) {
   const el =
     typeof idOrEl === "string" ? document.getElementById(idOrEl) : idOrEl;
-  return el ? parseFloat(el.innerText) || 0 : 0;
+  return el ? parseAmount(el.innerText) || 0 : 0;
 }
 
 function getMultiplierValue(idOrEl = "globalMultiplier") {
@@ -43,7 +54,12 @@ function getMultiplierValue(idOrEl = "globalMultiplier") {
   if (!el) return 1.0;
   const raw = el.innerText.trim();
   if (raw === "") return 1.0;
-  const val = parseFloat(raw);
+  // Allow "18%" as shorthand for a 1.18 multiplier (rounded to avoid IEEE-754 artifacts like 1.1400000000000001)
+  if (raw.endsWith("%")) {
+    const pct = parseAmount(raw.slice(0, -1));
+    return isNaN(pct) ? 1.0 : Number((1 + pct / 100).toPrecision(12));
+  }
+  const val = parseAmount(raw);
   return isNaN(val) || val === 0 ? 1.0 : val;
 }
 
@@ -52,11 +68,21 @@ function booleansToBitmask(boolArray) {
 }
 
 function bitmaskToBooleans(mask, length) {
+  // Use arithmetic instead of bitwise ops so groups larger than 31 people
+  // decode the same way booleansToBitmask encoded them (up to 53 people).
   const arr = [];
   for (let i = 0; i < length; i++) {
-    arr.push(!!(mask & (1 << i)));
+    arr.push(Math.floor(mask / Math.pow(2, i)) % 2 === 1);
   }
   return arr;
+}
+
+function makeCheckbox(checked = false) {
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = checked;
+  cb.onchange = triggerFullRefresh;
+  return cb;
 }
 
 function toB64(str) {
@@ -71,7 +97,7 @@ function fromB64(str) {
   try {
     return decodeURIComponent(
       Array.prototype.map
-        .call(atob(str), (c) => {
+        .call(atob(str.replace(/ /g, "+")), (c) => {
           return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
         })
         .join(""),
@@ -93,8 +119,6 @@ function refreshCalculations() {
   const totals = calculateGrandTotals(subtotal);
 
   splitCostsProportionally(people, subtotal, totals, costTable, paymentTable);
-
-  updateSyncStatus("Synced to URL", true);
 }
 
 function syncPeopleHeaders(costTable, paymentTable) {
@@ -130,7 +154,7 @@ function syncPeopleHeaders(costTable, paymentTable) {
 function calculateSubtotal() {
   let subtotal = 0;
   document.querySelectorAll("#costTable .cost").forEach((cell) => {
-    subtotal += parseFloat(cell.innerText) || 0;
+    subtotal += getNumericValue(cell);
   });
   document.getElementById("subtotalDisplay").innerText = subtotal.toFixed(2);
   return subtotal;
@@ -149,6 +173,11 @@ function calculateGrandTotals(subtotal) {
   return { adder, multiplier, addBefore };
 }
 
+function formatCurrency(val) {
+  const fixed = Math.abs(val).toFixed(2);
+  return val < 0 && fixed !== "0.00" ? "-$" + fixed : "$" + fixed;
+}
+
 function splitCostsProportionally(
   people,
   subtotal,
@@ -161,7 +190,7 @@ function splitCostsProportionally(
 
   itemRows.forEach((row) => {
     const costCell = row.querySelector(".cost");
-    const itemCost = costCell ? parseFloat(costCell.innerText) || 0 : 0;
+    const itemCost = getNumericValue(costCell);
     const checkboxes = row.querySelectorAll("input[type='checkbox']");
 
     let checkedIndices = [];
@@ -202,7 +231,7 @@ function splitCostsProportionally(
     }
 
     const resCell = resultRow.insertCell(-1);
-    resCell.innerText = finalVal.toFixed(2);
+    resCell.innerText = formatCurrency(finalVal);
     resCell.style.padding = "8px";
     resCell.style.borderTop = "1px solid #dee2e6";
   }
@@ -234,10 +263,7 @@ function addNewRow() {
     .getElementById("costTable")
     .rows[0].querySelectorAll(".person-header").length;
   for (let i = 0; i < peopleCount; i++) {
-    const cell = row.insertCell(-1);
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cell.appendChild(cb);
+    row.insertCell(-1).appendChild(makeCheckbox());
   }
 
   bindInputEvents(row);
@@ -255,17 +281,15 @@ function addNewPerson() {
   th.innerText = "";
   costTable.rows[0].appendChild(th);
 
-  // Add body checkboxes
+  // Add body checkboxes (makeCheckbox binds onchange; bindInputEvents(th)
+  // below only covers the header, not these new inputs)
   for (let i = 1; i < costTable.rows.length; i++) {
-    const cell = costTable.rows[i].insertCell(-1);
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cell.appendChild(cb);
+    costTable.rows[i].insertCell(-1).appendChild(makeCheckbox());
   }
 
   // Update payment table
   payTable.rows[0].insertCell(-1).innerText = "";
-  payTable.rows[1].insertCell(-1).innerText = "0.00";
+  payTable.rows[1].insertCell(-1).innerText = "$0.00";
 
   bindInputEvents(th);
   triggerFullRefresh();
@@ -282,7 +306,7 @@ function resetState() {
     const url = new URL(window.location.href);
     url.searchParams.delete("s");
     url.searchParams.delete("state");
-    window.location.href = url.pathname;
+    window.location.href = url.toString();
   }
 }
 
@@ -292,23 +316,40 @@ function copyLink() {
   const input = document.getElementById("shareUrlInput");
   if (!input) return;
 
+  // Make sure the link reflects any edits still waiting on the debounce
+  clearTimeout(saveTimeout);
+  persistStateToUrl();
+
   // Select the text
   input.select();
   input.setSelectionRange(0, 99999); // For mobile
 
-  // Copy to clipboard
-  navigator.clipboard.writeText(input.value).then(() => {
+  const showCopied = () => {
     const btn = document.getElementById("copyBtn");
     if (btn) {
-      const oldText = btn.innerText;
       btn.innerText = "Copied!";
       btn.style.background = "#28a745";
-      setTimeout(() => {
-        btn.innerText = oldText;
+      clearTimeout(copyResetTimeout);
+      copyResetTimeout = setTimeout(() => {
+        btn.innerText = "Copy Link";
         btn.style.background = "#007bff";
       }, 2000);
     }
-  });
+  };
+
+  // Fallback for browsers/contexts without the async Clipboard API
+  const legacyCopy = () => {
+    try {
+      if (document.execCommand("copy")) showCopied();
+    } catch (e) {}
+  };
+
+  // Copy to clipboard
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(input.value).then(showCopied, legacyCopy);
+  } else {
+    legacyCopy();
+  }
 }
 
 function persistStateToUrl() {
@@ -316,7 +357,7 @@ function persistStateToUrl() {
   const peopleHeaders = costTable.rows[0].querySelectorAll(".person-header");
 
   const state = {
-    p: Array.from(peopleHeaders).map((th) => th.innerText),
+    p: Array.from(peopleHeaders).map((th) => th.innerText.trim()),
     g: [
       getNumericValue("globalAdder"),
       getMultiplierValue("globalMultiplier"),
@@ -328,7 +369,7 @@ function persistStateToUrl() {
   document.querySelectorAll("#costTable tr[id^='row_']").forEach((row) => {
     const checkboxes = row.querySelectorAll("input[type='checkbox']");
     state.i.push([
-      row.querySelector(".itemName").innerText,
+      row.querySelector(".itemName").innerText.trim(),
       getNumericValue(row.querySelector(".cost")),
       booleansToBitmask(Array.from(checkboxes).map((cb) => cb.checked)),
     ]);
@@ -341,9 +382,12 @@ function persistStateToUrl() {
   history.replaceState({}, "", url.toString());
   const shareInput = document.getElementById("shareUrlInput");
   if (shareInput) shareInput.value = url.toString();
+  updateSyncStatus("Synced to URL", true);
 }
 
 function reconstructUIFromState(state) {
+  if (!state || typeof state !== "object") return;
+
   isBuildingDOM = true;
   const costTable = document.getElementById("costTable");
   const payTable = document.getElementById("paymentTable");
@@ -359,8 +403,11 @@ function reconstructUIFromState(state) {
     payHead.deleteCell(0);
   }
 
-  const peopleNames = state.p || state.people || [];
-  peopleNames.forEach((name) => {
+  const peopleNames = Array.isArray(state.p || state.people)
+    ? state.p || state.people
+    : [];
+  peopleNames.forEach((rawName) => {
+    const name = String(rawName ?? "").trim();
     const th = document.createElement("th");
     th.contentEditable = true;
     th.className = "person-header";
@@ -373,8 +420,12 @@ function reconstructUIFromState(state) {
   while (costTable.rows.length > 1) costTable.deleteRow(1);
   nextRowId = 1;
 
-  const items = state.i || state.items || [];
+  const items = Array.isArray(state.i || state.items)
+    ? state.i || state.items
+    : [];
   items.forEach((item) => {
+    if (!item || typeof item !== "object") return;
+
     const row = costTable.insertRow(-1);
     const id = nextRowId++;
     row.id = "row_" + id;
@@ -392,20 +443,16 @@ function reconstructUIFromState(state) {
     const n = row.insertCell(1);
     n.className = "itemName";
     n.contentEditable = true;
-    n.innerText = name;
+    n.innerText = String(name ?? "").trim();
     const c = row.insertCell(2);
     c.className = "cost";
     c.contentEditable = true;
     c.innerText = cost || "";
     row.insertCell(3).className = "spacer";
 
-    const checks = bitmaskToBooleans(bitmask, peopleNames.length);
+    const checks = bitmaskToBooleans(bitmask || 0, peopleNames.length);
     checks.forEach((checked) => {
-      const cell = row.insertCell(-1);
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = checked;
-      cell.appendChild(cb);
+      row.insertCell(-1).appendChild(makeCheckbox(checked));
     });
   });
 
@@ -422,7 +469,7 @@ function reconstructUIFromState(state) {
   // 4. Payment data row
   const resRow = payTable.rows[1];
   while (resRow.cells.length > 0) resRow.deleteCell(0);
-  peopleNames.forEach(() => (resRow.insertCell(-1).innerText = "0.00"));
+  peopleNames.forEach(() => (resRow.insertCell(-1).innerText = "$0.00"));
 
   isBuildingDOM = false;
 }
@@ -440,7 +487,7 @@ function bindInputEvents(root = document) {
             root.classList.contains("cost") ||
             root.classList.contains("person-header"))
         ? [root]
-        : [root, ...root.querySelectorAll(".itemName, .cost, .person-header")];
+        : root.querySelectorAll(".itemName, .cost, .person-header");
 
   targets.forEach((el) => {
     el.oninput = triggerFullRefresh;
@@ -451,8 +498,18 @@ function bindInputEvents(root = document) {
       }
       triggerFullRefresh();
     };
+    el.onpaste = (e) => {
+      // Strip rich formatting (bold, links, table HTML) and newlines on paste
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData)
+        .getData("text")
+        .replace(/\s*[\r\n]+\s*/g, " ")
+        .trim();
+      document.execCommand("insertText", false, text);
+    };
     el.onkeydown = (e) => {
-      if (e.key === "Enter") {
+      // Ignore Enter while an IME (e.g. CJK input) is composing text
+      if (e.key === "Enter" && !e.isComposing) {
         e.preventDefault(); // Prevent default inserting of <br>
 
         if (el.classList.contains("itemName") || el.classList.contains("cost")) {
@@ -516,8 +573,8 @@ function bindInputEvents(root = document) {
 
   const inputs =
     root === document
-      ? document.querySelectorAll("input")
-      : root.querySelectorAll("input");
+      ? document.querySelectorAll("input[type='checkbox']")
+      : root.querySelectorAll("input[type='checkbox']");
 
   inputs.forEach((el) => {
     el.onchange = triggerFullRefresh;
@@ -529,17 +586,37 @@ window.addEventListener("load", () => {
   const b64State = params.get("s");
   const legacyState = params.get("state");
 
-  if (b64State) {
-    const decoded = fromB64(b64State);
-    if (decoded) reconstructUIFromState(JSON.parse(decoded));
-  } else if (legacyState) {
-    try {
+  // A truncated or mangled link (common when pasted through chat apps) must
+  // not crash init, otherwise no event handlers get bound.
+  try {
+    if (b64State) {
+      const decoded = fromB64(b64State);
+      if (decoded) reconstructUIFromState(JSON.parse(decoded));
+    } else if (legacyState) {
       reconstructUIFromState(JSON.parse(legacyState));
-    } catch (e) {}
+    }
+  } catch (e) {
+    console.warn("Could not restore state from URL:", e);
+  } finally {
+    isBuildingDOM = false;
+  }
+
+  // Let clicks on the padding around a checkbox toggle it too
+  const costTable = document.getElementById("costTable");
+  if (costTable) {
+    costTable.addEventListener("click", (e) => {
+      if (e.target.tagName !== "TD") return;
+      const cb = e.target.querySelector("input[type='checkbox']");
+      if (cb) {
+        cb.checked = !cb.checked;
+        triggerFullRefresh();
+      }
+    });
   }
 
   bindInputEvents();
-  triggerFullRefresh();
+  refreshCalculations();
+  persistStateToUrl();
 });
 
 // Alias for HTML button compatibility
