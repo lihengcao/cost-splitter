@@ -493,8 +493,18 @@ function bindInputEvents(root = document) {
       }
       triggerFullRefresh();
     };
+    el.onpaste = (e) => {
+      // Strip rich formatting (bold, links, table HTML) and newlines on paste
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData)
+        .getData("text")
+        .replace(/\s*[\r\n]+\s*/g, " ")
+        .trim();
+      document.execCommand("insertText", false, text);
+    };
     el.onkeydown = (e) => {
-      if (e.key === "Enter") {
+      // Ignore Enter while an IME (e.g. CJK input) is composing text
+      if (e.key === "Enter" && !e.isComposing) {
         e.preventDefault(); // Prevent default inserting of <br>
 
         if (el.classList.contains("itemName") || el.classList.contains("cost")) {
