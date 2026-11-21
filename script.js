@@ -59,6 +59,14 @@ function bitmaskToBooleans(mask, length) {
   return arr;
 }
 
+function makeCheckbox(checked = false) {
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = checked;
+  cb.onchange = triggerFullRefresh;
+  return cb;
+}
+
 function toB64(str) {
   return btoa(
     encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
@@ -234,10 +242,7 @@ function addNewRow() {
     .getElementById("costTable")
     .rows[0].querySelectorAll(".person-header").length;
   for (let i = 0; i < peopleCount; i++) {
-    const cell = row.insertCell(-1);
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cell.appendChild(cb);
+    row.insertCell(-1).appendChild(makeCheckbox());
   }
 
   bindInputEvents(row);
@@ -255,12 +260,10 @@ function addNewPerson() {
   th.innerText = "";
   costTable.rows[0].appendChild(th);
 
-  // Add body checkboxes
+  // Add body checkboxes (makeCheckbox binds onchange; bindInputEvents(th)
+  // below only covers the header, not these new inputs)
   for (let i = 1; i < costTable.rows.length; i++) {
-    const cell = costTable.rows[i].insertCell(-1);
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cell.appendChild(cb);
+    costTable.rows[i].insertCell(-1).appendChild(makeCheckbox());
   }
 
   // Update payment table
@@ -401,11 +404,7 @@ function reconstructUIFromState(state) {
 
     const checks = bitmaskToBooleans(bitmask, peopleNames.length);
     checks.forEach((checked) => {
-      const cell = row.insertCell(-1);
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = checked;
-      cell.appendChild(cb);
+      row.insertCell(-1).appendChild(makeCheckbox(checked));
     });
   });
 
@@ -440,7 +439,7 @@ function bindInputEvents(root = document) {
             root.classList.contains("cost") ||
             root.classList.contains("person-header"))
         ? [root]
-        : [root, ...root.querySelectorAll(".itemName, .cost, .person-header")];
+        : root.querySelectorAll(".itemName, .cost, .person-header");
 
   targets.forEach((el) => {
     el.oninput = triggerFullRefresh;
@@ -516,8 +515,8 @@ function bindInputEvents(root = document) {
 
   const inputs =
     root === document
-      ? document.querySelectorAll("input")
-      : root.querySelectorAll("input");
+      ? document.querySelectorAll("input[type='checkbox']")
+      : root.querySelectorAll("input[type='checkbox']");
 
   inputs.forEach((el) => {
     el.onchange = triggerFullRefresh;
