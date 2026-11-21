@@ -52,9 +52,11 @@ function booleansToBitmask(boolArray) {
 }
 
 function bitmaskToBooleans(mask, length) {
+  // Use arithmetic instead of bitwise ops so groups larger than 31 people
+  // decode the same way booleansToBitmask encoded them (up to 53 people).
   const arr = [];
   for (let i = 0; i < length; i++) {
-    arr.push(!!(mask & (1 << i)));
+    arr.push(Math.floor(mask / Math.pow(2, i)) % 2 === 1);
   }
   return arr;
 }
@@ -79,7 +81,7 @@ function fromB64(str) {
   try {
     return decodeURIComponent(
       Array.prototype.map
-        .call(atob(str), (c) => {
+        .call(atob(str.replace(/ /g, "+")), (c) => {
           return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
         })
         .join(""),
@@ -319,7 +321,7 @@ function persistStateToUrl() {
   const peopleHeaders = costTable.rows[0].querySelectorAll(".person-header");
 
   const state = {
-    p: Array.from(peopleHeaders).map((th) => th.innerText),
+    p: Array.from(peopleHeaders).map((th) => th.innerText.trim()),
     g: [
       getNumericValue("globalAdder"),
       getMultiplierValue("globalMultiplier"),
@@ -331,7 +333,7 @@ function persistStateToUrl() {
   document.querySelectorAll("#costTable tr[id^='row_']").forEach((row) => {
     const checkboxes = row.querySelectorAll("input[type='checkbox']");
     state.i.push([
-      row.querySelector(".itemName").innerText,
+      row.querySelector(".itemName").innerText.trim(),
       getNumericValue(row.querySelector(".cost")),
       booleansToBitmask(Array.from(checkboxes).map((cb) => cb.checked)),
     ]);
@@ -347,6 +349,8 @@ function persistStateToUrl() {
 }
 
 function reconstructUIFromState(state) {
+  if (!state || typeof state !== "object") return;
+
   isBuildingDOM = true;
   const costTable = document.getElementById("costTable");
   const payTable = document.getElementById("paymentTable");
@@ -362,8 +366,11 @@ function reconstructUIFromState(state) {
     payHead.deleteCell(0);
   }
 
-  const peopleNames = state.p || state.people || [];
-  peopleNames.forEach((name) => {
+  const peopleNames = Array.isArray(state.p || state.people)
+    ? state.p || state.people
+    : [];
+  peopleNames.forEach((rawName) => {
+    const name = String(rawName ?? "").trim();
     const th = document.createElement("th");
     th.contentEditable = true;
     th.className = "person-header";
@@ -376,8 +383,12 @@ function reconstructUIFromState(state) {
   while (costTable.rows.length > 1) costTable.deleteRow(1);
   nextRowId = 1;
 
-  const items = state.i || state.items || [];
+  const items = Array.isArray(state.i || state.items)
+    ? state.i || state.items
+    : [];
   items.forEach((item) => {
+    if (!item || typeof item !== "object") return;
+
     const row = costTable.insertRow(-1);
     const id = nextRowId++;
     row.id = "row_" + id;
@@ -395,14 +406,14 @@ function reconstructUIFromState(state) {
     const n = row.insertCell(1);
     n.className = "itemName";
     n.contentEditable = true;
-    n.innerText = name;
+    n.innerText = String(name ?? "").trim();
     const c = row.insertCell(2);
     c.className = "cost";
     c.contentEditable = true;
     c.innerText = cost || "";
     row.insertCell(3).className = "spacer";
 
-    const checks = bitmaskToBooleans(bitmask, peopleNames.length);
+    const checks = bitmaskToBooleans(bitmask || 0, peopleNames.length);
     checks.forEach((checked) => {
       row.insertCell(-1).appendChild(makeCheckbox(checked));
     });
@@ -528,13 +539,19 @@ window.addEventListener("load", () => {
   const b64State = params.get("s");
   const legacyState = params.get("state");
 
-  if (b64State) {
-    const decoded = fromB64(b64State);
-    if (decoded) reconstructUIFromState(JSON.parse(decoded));
-  } else if (legacyState) {
-    try {
+  // A truncated or mangled link (common when pasted through chat apps) must
+  // not crash init, otherwise no event handlers get bound.
+  try {
+    if (b64State) {
+      const decoded = fromB64(b64State);
+      if (decoded) reconstructUIFromState(JSON.parse(decoded));
+    } else if (legacyState) {
       reconstructUIFromState(JSON.parse(legacyState));
-    } catch (e) {}
+    }
+  } catch (e) {
+    console.warn("Could not restore state from URL:", e);
+  } finally {
+    isBuildingDOM = false;
   }
 
   bindInputEvents();
