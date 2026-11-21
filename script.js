@@ -173,6 +173,11 @@ function calculateGrandTotals(subtotal) {
   return { adder, multiplier, addBefore };
 }
 
+function formatCurrency(val) {
+  const fixed = Math.abs(val).toFixed(2);
+  return val < 0 && fixed !== "0.00" ? "-$" + fixed : "$" + fixed;
+}
+
 function splitCostsProportionally(
   people,
   subtotal,
@@ -226,7 +231,7 @@ function splitCostsProportionally(
     }
 
     const resCell = resultRow.insertCell(-1);
-    resCell.innerText = finalVal.toFixed(2);
+    resCell.innerText = formatCurrency(finalVal);
     resCell.style.padding = "8px";
     resCell.style.borderTop = "1px solid #dee2e6";
   }
@@ -284,7 +289,7 @@ function addNewPerson() {
 
   // Update payment table
   payTable.rows[0].insertCell(-1).innerText = "";
-  payTable.rows[1].insertCell(-1).innerText = "0.00";
+  payTable.rows[1].insertCell(-1).innerText = "$0.00";
 
   bindInputEvents(th);
   triggerFullRefresh();
@@ -464,7 +469,7 @@ function reconstructUIFromState(state) {
   // 4. Payment data row
   const resRow = payTable.rows[1];
   while (resRow.cells.length > 0) resRow.deleteCell(0);
-  peopleNames.forEach(() => (resRow.insertCell(-1).innerText = "0.00"));
+  peopleNames.forEach(() => (resRow.insertCell(-1).innerText = "$0.00"));
 
   isBuildingDOM = false;
 }
@@ -594,6 +599,19 @@ window.addEventListener("load", () => {
     console.warn("Could not restore state from URL:", e);
   } finally {
     isBuildingDOM = false;
+  }
+
+  // Let clicks on the padding around a checkbox toggle it too
+  const costTable = document.getElementById("costTable");
+  if (costTable) {
+    costTable.addEventListener("click", (e) => {
+      if (e.target.tagName !== "TD") return;
+      const cb = e.target.querySelector("input[type='checkbox']");
+      if (cb) {
+        cb.checked = !cb.checked;
+        triggerFullRefresh();
+      }
+    });
   }
 
   bindInputEvents();

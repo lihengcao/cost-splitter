@@ -111,35 +111,37 @@
       </button>
     </div>
 
-    <table id="costTable">
-      <tr>
-        <th></th>
-        <th>Item Description</th>
-        <th>Cost ($)</th>
-        <td class="spacer"></td>
-        <th contenteditable="true" class="person-header"></th>
-        <th contenteditable="true" class="person-header"></th>
-        <th contenteditable="true" class="person-header"></th>
-      </tr>
-      <tr id="row_1">
-        <td><button onclick="deleteRow(1)">❌</button></td>
-        <td contenteditable="true" class="itemName"></td>
-        <td contenteditable="true" class="cost"></td>
-        <td class="spacer"></td>
-        <td><input type="checkbox" /></td>
-        <td><input type="checkbox" /></td>
-        <td><input type="checkbox" /></td>
-      </tr>
-      <tr id="row_2">
-        <td><button onclick="deleteRow(2)">❌</button></td>
-        <td contenteditable="true" class="itemName"></td>
-        <td contenteditable="true" class="cost"></td>
-        <td class="spacer"></td>
-        <td><input type="checkbox" /></td>
-        <td><input type="checkbox" /></td>
-        <td><input type="checkbox" /></td>
-      </tr>
-    </table>
+    <div class="table-wrap">
+      <table id="costTable">
+        <tr>
+          <th></th>
+          <th>Item Description</th>
+          <th>Cost ($)</th>
+          <td class="spacer"></td>
+          <th contenteditable="true" class="person-header"></th>
+          <th contenteditable="true" class="person-header"></th>
+          <th contenteditable="true" class="person-header"></th>
+        </tr>
+        <tr id="row_1">
+          <td><button onclick="deleteRow(1)">❌</button></td>
+          <td contenteditable="true" class="itemName"></td>
+          <td contenteditable="true" class="cost"></td>
+          <td class="spacer"></td>
+          <td><input type="checkbox" /></td>
+          <td><input type="checkbox" /></td>
+          <td><input type="checkbox" /></td>
+        </tr>
+        <tr id="row_2">
+          <td><button onclick="deleteRow(2)">❌</button></td>
+          <td contenteditable="true" class="itemName"></td>
+          <td contenteditable="true" class="cost"></td>
+          <td class="spacer"></td>
+          <td><input type="checkbox" /></td>
+          <td><input type="checkbox" /></td>
+          <td><input type="checkbox" /></td>
+        </tr>
+      </table>
+    </div>
 
     <!-- 3. Globals Section -->
     <h2>2. Add Taxes, Fees, or Tip</h2>
@@ -185,14 +187,16 @@
 
     <!-- 5. Output Section -->
     <h2>3. Final Totals Per Person</h2>
-    <table id="paymentTable" style="width: 100%; border-collapse: collapse">
-      <tr style="background: #f1f3f5">
-        <!-- Headers populated by script -->
-      </tr>
-      <tr>
-        <!-- Amounts populated by script -->
-      </tr>
-    </table>
+    <div class="table-wrap">
+      <table id="paymentTable" style="width: 100%; border-collapse: collapse">
+        <tr style="background: #f1f3f5">
+          <!-- Headers populated by script -->
+        </tr>
+        <tr>
+          <!-- Amounts populated by script -->
+        </tr>
+      </table>
+    </div>
 
     <script src="script.js?v=9"></script>
   </body>

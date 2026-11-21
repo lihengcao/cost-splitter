@@ -48,6 +48,16 @@ button:hover {
     border-color: #007bff;
 }
 
+.table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 20px 0;
+}
+
+.table-wrap table {
+    margin: 0;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -97,6 +107,11 @@ th {
 input[type="checkbox"] {
     width: 18px;
     height: 18px;
+    cursor: pointer;
+}
+
+#costTable td:has(input[type="checkbox"]) {
+    text-align: center;
     cursor: pointer;
 }
 
