@@ -5,6 +5,7 @@
  */
 
 let saveTimeout = null;
+let copyResetTimeout = null;
 let isBuildingDOM = false;
 let nextRowId = 3;
 
@@ -24,7 +25,7 @@ function triggerFullRefresh() {
   // Execute logic
   refreshCalculations();
 
-  // Debounce URL persistence
+  // Debounce URL persistence (status flips to "Synced" once this actually runs)
   clearTimeout(saveTimeout);
   saveTimeout = setTimeout(persistStateToUrl, 300);
 }
@@ -103,8 +104,6 @@ function refreshCalculations() {
   const totals = calculateGrandTotals(subtotal);
 
   splitCostsProportionally(people, subtotal, totals, costTable, paymentTable);
-
-  updateSyncStatus("Synced to URL", true);
 }
 
 function syncPeopleHeaders(costTable, paymentTable) {
@@ -287,7 +286,7 @@ function resetState() {
     const url = new URL(window.location.href);
     url.searchParams.delete("s");
     url.searchParams.delete("state");
-    window.location.href = url.pathname;
+    window.location.href = url.toString();
   }
 }
 
@@ -297,23 +296,40 @@ function copyLink() {
   const input = document.getElementById("shareUrlInput");
   if (!input) return;
 
+  // Make sure the link reflects any edits still waiting on the debounce
+  clearTimeout(saveTimeout);
+  persistStateToUrl();
+
   // Select the text
   input.select();
   input.setSelectionRange(0, 99999); // For mobile
 
-  // Copy to clipboard
-  navigator.clipboard.writeText(input.value).then(() => {
+  const showCopied = () => {
     const btn = document.getElementById("copyBtn");
     if (btn) {
-      const oldText = btn.innerText;
       btn.innerText = "Copied!";
       btn.style.background = "#28a745";
-      setTimeout(() => {
-        btn.innerText = oldText;
+      clearTimeout(copyResetTimeout);
+      copyResetTimeout = setTimeout(() => {
+        btn.innerText = "Copy Link";
         btn.style.background = "#007bff";
       }, 2000);
     }
-  });
+  };
+
+  // Fallback for browsers/contexts without the async Clipboard API
+  const legacyCopy = () => {
+    try {
+      if (document.execCommand("copy")) showCopied();
+    } catch (e) {}
+  };
+
+  // Copy to clipboard
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(input.value).then(showCopied, legacyCopy);
+  } else {
+    legacyCopy();
+  }
 }
 
 function persistStateToUrl() {
@@ -346,6 +362,7 @@ function persistStateToUrl() {
   history.replaceState({}, "", url.toString());
   const shareInput = document.getElementById("shareUrlInput");
   if (shareInput) shareInput.value = url.toString();
+  updateSyncStatus("Synced to URL", true);
 }
 
 function reconstructUIFromState(state) {
@@ -555,7 +572,8 @@ window.addEventListener("load", () => {
   }
 
   bindInputEvents();
-  triggerFullRefresh();
+  refreshCalculations();
+  persistStateToUrl();
 });
 
 // Alias for HTML button compatibility
