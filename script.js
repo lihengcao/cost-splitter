@@ -32,10 +32,20 @@ function triggerFullRefresh() {
 
 // --- 2. Data Helpers ---
 
+// Lenient number parsing: tolerates "$12.50", " 12 ", and "1,200.50".
+// Commas are only stripped when they look like thousands separators,
+// so "12,50" still parses the same way it did before (as 12).
+function parseAmount(text) {
+  const cleaned = String(text || "")
+    .replace(/[$\s]/g, "")
+    .replace(/,(?=\d{3}(\D|$))/g, "");
+  return parseFloat(cleaned);
+}
+
 function getNumericValue(idOrEl) {
   const el =
     typeof idOrEl === "string" ? document.getElementById(idOrEl) : idOrEl;
-  return el ? parseFloat(el.innerText) || 0 : 0;
+  return el ? parseAmount(el.innerText) || 0 : 0;
 }
 
 function getMultiplierValue(idOrEl = "globalMultiplier") {
@@ -44,7 +54,12 @@ function getMultiplierValue(idOrEl = "globalMultiplier") {
   if (!el) return 1.0;
   const raw = el.innerText.trim();
   if (raw === "") return 1.0;
-  const val = parseFloat(raw);
+  // Allow "18%" as shorthand for a 1.18 multiplier (rounded to avoid IEEE-754 artifacts like 1.1400000000000001)
+  if (raw.endsWith("%")) {
+    const pct = parseAmount(raw.slice(0, -1));
+    return isNaN(pct) ? 1.0 : Number((1 + pct / 100).toPrecision(12));
+  }
+  const val = parseAmount(raw);
   return isNaN(val) || val === 0 ? 1.0 : val;
 }
 
@@ -139,7 +154,7 @@ function syncPeopleHeaders(costTable, paymentTable) {
 function calculateSubtotal() {
   let subtotal = 0;
   document.querySelectorAll("#costTable .cost").forEach((cell) => {
-    subtotal += parseFloat(cell.innerText) || 0;
+    subtotal += getNumericValue(cell);
   });
   document.getElementById("subtotalDisplay").innerText = subtotal.toFixed(2);
   return subtotal;
@@ -170,7 +185,7 @@ function splitCostsProportionally(
 
   itemRows.forEach((row) => {
     const costCell = row.querySelector(".cost");
-    const itemCost = costCell ? parseFloat(costCell.innerText) || 0 : 0;
+    const itemCost = getNumericValue(costCell);
     const checkboxes = row.querySelectorAll("input[type='checkbox']");
 
     let checkedIndices = [];
